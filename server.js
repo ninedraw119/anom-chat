@@ -1,60 +1,39 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
+const express = require("express");
+const path = require("path");
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: { origin: "*" },
-  maxHttpBufferSize: 1e7 // suporta arquivos até ~10MB
+const http = require("http").Server(app);
+const io = require("socket.io")(http);
+
+// Servir arquivos estáticos da pasta 'public' (incluindo as imagens de pré-visualização)
+app.use(express.static(path.join(__dirname, "public")));
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Configuração do upload
-const upload = multer({ dest: path.join(__dirname, 'public/uploads/') });
+io.on("connection", (socket) => {
+  console.log("Novo usuário conectado");
 
-app.use(express.static('public'));
+  // Receber e enviar a mensagem
+  socket.on("msg", (message) => {
+    let previewImage = "txt.png";  // Valor padrão para a pré-visualização
 
-let users = {};
+    // Definir o tipo de pré-visualização com base na extensão do arquivo
+    if (message.endsWith(".mp3")) {
+      previewImage = "mp3.png";
+    } else if (message.endsWith(".pdf")) {
+      previewImage = "pdf.png";
+    }
 
-// Upload de arquivos via formulário
-app.post('/upload', upload.single('file'), (req, res) => {
-  const file = req.file;
-  if (!file) return res.status(400).send('Nenhum arquivo enviado.');
-
-  const ext = path.extname(file.originalname);
-  const newName = file.filename + ext;
-  const newPath = path.join(file.destination, newName);
-
-  fs.renameSync(file.path, newPath); // Renomeia para manter a extensão
-
-  const fileUrl = `/uploads/${newName}`;
-  res.json({ fileUrl });
-});
-
-// WebSocket
-io.on('connection', (socket) => {
-  console.log('Usuário conectado');
-
-  socket.on('join', (username) => {
-    users[socket.id] = username;
-    console.log(`${username} entrou`);
-  });
-
-  socket.on('msg', (data) => {
-    const username = users[socket.id] || 'Anônimo';
-    io.emit('msg', { username, message: data.message, isFile: data.isFile });
-  });
-
-  socket.on('disconnect', () => {
-    console.log('Usuário desconectado');
-    delete users[socket.id];
+    // Enviar a mensagem com o caminho da imagem de pré-visualização
+    io.emit("msg", {
+      message: message,
+      previewImage: `/previews/${previewImage}`, // Caminho da imagem de pré-visualização
+      fileUrl: `/previews/${previewImage}`       // Caminho para o arquivo de download
+    });
   });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+http.listen(3000, () => {
+  console.log("Servidor rodando na porta 3000");
 });

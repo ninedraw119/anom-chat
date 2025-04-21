@@ -1,135 +1,152 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chat Anônimo</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon" />
-    <script src="/socket.io/socket.io.js"></script>
-    <style>
-      body {
-        background-color: #121212;
-        color: #fff;
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 20px;
-        text-align: center;
-      }
-      input[type="text"],
-      input[type="file"] {
-        background-color: #333;
-        color: #fff;
-        border: 1px solid #555;
-        padding: 8px;
-        border-radius: 5px;
-        margin: 5px;
-        width: 60%;
-      }
-      button {
-        background-color: #6200ea;
-        color: white;
-        padding: 8px 16px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        margin: 5px;
-      }
-      #chat-container {
-        display: none;
-        max-width: 800px;
-        margin: auto;
-        margin-top: 20px;
-        text-align: left;
-        border-top: 1px solid #444;
-        padding-top: 10px;
-      }
-      .message {
-        margin-bottom: 10px;
-        padding: 5px;
-        background-color: #1e1e1e;
-        border-radius: 5px;
-      }
-      .message strong {
-        color: #bb86fc;
-      }
-      img,
-      video {
-        max-width: 300px;
-        border-radius: 5px;
-        margin-top: 5px;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Chat Anônimo</h1>
-    <div id="login">
-      <input type="text" id="username" placeholder="Digite seu nome" />
-      <button onclick="joinChat()">Entrar</button>
-    </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Anônimo</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      background-color: #121212; /* Fundo escuro */
+      color: #fff; /* Texto claro */
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
 
-    <div id="chat-container">
-      <div id="messages"></div>
-      <input type="text" id="message-input" placeholder="Digite sua mensagem" />
-      <input type="file" id="file-input" />
-      <button onclick="sendMessage()">Enviar</button>
-    </div>
+    .container {
+      text-align: center;
+    }
 
-    <script>
-      let socket;
+    input[type="text"] {
+      background-color: #333;
+      color: #fff;
+      border: 2px solid #555;
+      padding: 10px;
+      width: 300px;
+      border-radius: 5px;
+    }
 
-      function joinChat() {
-        const username = document.getElementById("username").value.trim();
-        if (!username) return alert("Digite um nome!");
+    button {
+      background-color: #6200ea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
 
-        socket = io();
-        socket.emit("join", username);
-        document.getElementById("login").style.display = "none";
+    button:hover {
+      background-color: #3700b3;
+    }
+
+    #chat-container {
+      display: none;
+      background-color: #1f1f1f;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 400px;
+      margin-top: 20px;
+      height: 500px;
+      overflow-y: scroll;
+    }
+
+    .message {
+      background-color: #333;
+      border-radius: 8px;
+      margin: 10px 0;
+      padding: 10px;
+    }
+
+    .file-preview {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .file-preview img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 5px;
+    }
+
+    .download-btn {
+      background-color: #4CAF50;
+      padding: 5px 10px;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .download-btn:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bem-vindo ao Chat Anônimo</h1>
+    <input type="text" id="username" placeholder="Escolha um nome" />
+    <button onclick="joinChat()">Entrar no Chat</button>
+  </div>
+
+  <div id="chat-container">
+    <div id="messages"></div>
+    <input type="text" id="message-input" placeholder="Digite uma mensagem" />
+    <button onclick="sendMessage()">Enviar</button>
+  </div>
+
+  <script>
+    const socket = io();
+
+    function joinChat() {
+      const username = document.getElementById("username").value;
+      if (username) {
+        document.querySelector(".container").style.display = "none";
         document.getElementById("chat-container").style.display = "block";
-
-        socket.on("msg", (data) => {
-          const div = document.createElement("div");
-          div.className = "message";
-          div.innerHTML = `<strong>${data.username}:</strong> `;
-
-          if (data.isFile) {
-            if (/\.(jpe?g|png|gif)$/i.test(data.message)) {
-              div.innerHTML += `<br><img src="${data.message}" alt="imagem" />`;
-            } else if (/\.(mp4|webm)$/i.test(data.message)) {
-              div.innerHTML += `<br><video controls src="${data.message}"></video>`;
-            } else {
-              const filename = data.message.split("/").pop();
-              div.innerHTML += `<br><a href="${data.message}" download>${filename}</a>`;
-            }
-          } else {
-            div.innerHTML += data.message;
-          }
-
-          document.getElementById("messages").appendChild(div);
-          document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
-        });
+        socket.emit("setUsername", username); // Enviar nome ao servidor
+      } else {
+        alert("Por favor, escolha um nome.");
       }
+    }
 
-      async function sendMessage() {
-        const input = document.getElementById("message-input");
-        const file = document.getElementById("file-input").files[0];
-
-        if (file) {
-          const formData = new FormData();
-          formData.append("file", file);
-          const res = await fetch("/upload", {
-            method: "POST",
-            body: formData,
-          });
-          const data = await res.json();
-          socket.emit("msg", { message: data.fileUrl, isFile: true });
-        } else {
-          const message = input.value.trim();
-          if (message) {
-            socket.emit("msg", { message, isFile: false });
-            input.value = "";
-          }
-        }
+    function sendMessage() {
+      const messageInput = document.getElementById("message-input");
+      const message = messageInput.value;
+      if (message.trim() !== "") {
+        socket.emit("msg", message); // Enviar a mensagem ao servidor
+        messageInput.value = ""; // Limpar o campo de entrada
       }
-    </script>
-  </body>
+    }
+
+    socket.on("msg", (data) => {
+      const messageContainer = document.getElementById("messages");
+      const messageElement = document.createElement("div");
+      messageElement.classList.add("message");
+      messageElement.innerHTML = `
+        <strong>${data.username}</strong>: ${data.message}
+        <div class="file-preview">
+          <img src="${data.previewImage}" alt="Preview">
+          <button class="download-btn" onclick="downloadFile('${data.fileUrl}')">Baixar</button>
+        </div>`;
+      messageContainer.appendChild(messageElement);
+      messageContainer.scrollTop = messageContainer.scrollHeight; // Rolagem automática
+    });
+
+    function downloadFile(url) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = url.split('/').pop(); // Nome do arquivo
+      link.click();
+    }
+  </script>
+</body>
 </html>
