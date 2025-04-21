@@ -26,7 +26,7 @@ io.on('connection', (socket) => {
   // Quando o usuário envia uma mensagem
   socket.on('msg', (data) => {
     const username = users[socket.id] || 'Usuário Anônimo'; // Pega o nome associado ao socket
-    io.emit('msg', { username, message: data.message });
+    io.emit('msg', { username, message: data.message }); // Envia a mensagem com o nome
   });
 
   // Quando o usuário se desconecta

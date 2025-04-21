@@ -85,7 +85,7 @@
         if (username) {
           document.querySelector(".container").style.display = "none";
           document.getElementById("chat-container").style.display = "block";
-          socket.emit("join", username); // Enviar nome ao servidor
+          socket.emit("setUsername", username); // Enviar nome ao servidor
         } else {
           alert("Por favor, escolha um nome.");
         }
@@ -95,7 +95,7 @@
         const messageInput = document.getElementById("message-input");
         const message = messageInput.value;
         if (message.trim() !== "") {
-          socket.emit("msg", message); // Enviar a mensagem ao servidor
+          socket.emit("msg", { message: message }); // Enviar a mensagem ao servidor
           messageInput.value = ""; // Limpar o campo de entrada
         }
       }
@@ -104,7 +104,7 @@
         const messageContainer = document.getElementById("messages");
         const messageElement = document.createElement("div");
         messageElement.classList.add("message");
-        messageElement.innerHTML = data; // Exibe a mensagem recebida
+        messageElement.innerHTML = `${data.username}: ${data.message}`; // Exibir a mensagem corretamente
         messageContainer.appendChild(messageElement);
         messageContainer.scrollTop = messageContainer.scrollHeight; // Rolagem automática
       });
