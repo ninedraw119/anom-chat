@@ -1,0 +1,16 @@
+{
+    "name": "anon-chat",
+    "version": "1.0.0",
+    "description": "Chat 100% anônimo e seguro",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "express": "^4.21.2",
+        "socket.io": "^4.6.1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC"
+}

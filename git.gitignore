@@ -1,0 +1,15 @@
+# Ignora dependências
+node_modules/
+
+# Ignora variáveis de ambiente
+.env
+
+# Ignora arquivos de log
+*.log
+npm-debug.log*
+
+# Ignora arquivos do sistema/IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
