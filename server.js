@@ -1,42 +1,60 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: { origin: "*" },
-  maxHttpBufferSize: 1e6 // limita o tamanho da mensagem (evita abusos)
+  maxHttpBufferSize: 1e7 // suporta arquivos até ~10MB
 });
+
+// Configuração do upload
+const upload = multer({ dest: path.join(__dirname, 'public/uploads/') });
 
 app.use(express.static('public'));
 
-let users = {}; // Para armazenar os nomes dos usuários
+let users = {};
 
-// Quando um cliente se conecta
+// Upload de arquivos via formulário
+app.post('/upload', upload.single('file'), (req, res) => {
+  const file = req.file;
+  if (!file) return res.status(400).send('Nenhum arquivo enviado.');
+
+  const ext = path.extname(file.originalname);
+  const newName = file.filename + ext;
+  const newPath = path.join(file.destination, newName);
+
+  fs.renameSync(file.path, newPath); // Renomeia para manter a extensão
+
+  const fileUrl = `/uploads/${newName}`;
+  res.json({ fileUrl });
+});
+
+// WebSocket
 io.on('connection', (socket) => {
-  console.log('Novo usuário conectado.');
+  console.log('Usuário conectado');
 
-  // Quando o nome do usuário é definido
-  socket.on('setUsername', (username) => {
-    users[socket.id] = username; // Associa o nome ao socket
-    console.log(`${username} entrou no chat.`);
+  socket.on('join', (username) => {
+    users[socket.id] = username;
+    console.log(`${username} entrou`);
   });
 
-  // Quando o usuário envia uma mensagem
   socket.on('msg', (data) => {
-    const username = users[socket.id] || 'Usuário Anônimo'; // Pega o nome associado ao socket
-    io.emit('msg', { username, message: data.message }); // Envia a mensagem com o nome
+    const username = users[socket.id] || 'Anônimo';
+    io.emit('msg', { username, message: data.message, isFile: data.isFile });
   });
 
-  // Quando o usuário se desconecta
   socket.on('disconnect', () => {
-    console.log('Usuário desconectado.');
-    delete users[socket.id]; // Remove o usuário quando desconectar
+    console.log('Usuário desconectado');
+    delete users[socket.id];
   });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor no ar em http://localhost:${PORT}`);
+  console.log(`Servidor rodando em http://localhost:${PORT}`);
 });

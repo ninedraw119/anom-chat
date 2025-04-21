@@ -1,113 +1,135 @@
 <!DOCTYPE html>
 <html lang="pt-br">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chat Anônimo</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
     <script src="/socket.io/socket.io.js"></script>
     <style>
       body {
-        background-color: #121212; /* Fundo escuro */
-        color: #fff; /* Texto claro */
+        background-color: #121212;
+        color: #fff;
         font-family: Arial, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
         margin: 0;
-      }
-
-      .container {
+        padding: 20px;
         text-align: center;
       }
-
-      input[type="text"] {
-        background-color: #333; /* Cor de fundo do campo */
-        color: #fff; /* Texto claro no campo */
-        border: 2px solid #555; /* Borda do campo */
-        padding: 10px;
-        width: 800px;
+      input[type="text"],
+      input[type="file"] {
+        background-color: #333;
+        color: #fff;
+        border: 1px solid #555;
+        padding: 8px;
         border-radius: 5px;
+        margin: 5px;
+        width: 60%;
       }
-
       button {
-        background-color: #6200ea; /* Cor de fundo do botão */
+        background-color: #6200ea;
         color: white;
+        padding: 8px 16px;
         border: none;
-        padding: 10px 20px;
-        font-size: 16px;
         border-radius: 5px;
         cursor: pointer;
-        transition: background-color 0.3s ease;
+        margin: 5px;
       }
-
-      button:hover {
-        background-color: #3700b3;
-      }
-
       #chat-container {
         display: none;
-        background-color: #1f1f1f;
-        border-radius: 10px;
-        padding: 20px;
-        max-width: 4000px;
+        max-width: 800px;
+        margin: auto;
         margin-top: 20px;
-        height: 500px;
-        overflow-y: scroll;
+        text-align: left;
+        border-top: 1px solid #444;
+        padding-top: 10px;
       }
-
       .message {
-        background-color: #333;
-        border-radius: 8px;
-        margin: 10px 0;
-        padding: 10px;
+        margin-bottom: 10px;
+        padding: 5px;
+        background-color: #1e1e1e;
+        border-radius: 5px;
+      }
+      .message strong {
+        color: #bb86fc;
+      }
+      img,
+      video {
+        max-width: 300px;
+        border-radius: 5px;
+        margin-top: 5px;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1>Bem-vindo ao Chat Anônimo</h1>
-      <input type="text" id="username" placeholder="Escolha um nome" />
-      <button onclick="joinChat()">Entrar no Chat</button>
+    <h1>Chat Anônimo</h1>
+    <div id="login">
+      <input type="text" id="username" placeholder="Digite seu nome" />
+      <button onclick="joinChat()">Entrar</button>
     </div>
 
     <div id="chat-container">
       <div id="messages"></div>
-      <input type="text" id="message-input" placeholder="Digite uma mensagem" />
+      <input type="text" id="message-input" placeholder="Digite sua mensagem" />
+      <input type="file" id="file-input" />
       <button onclick="sendMessage()">Enviar</button>
     </div>
 
     <script>
-      const socket = io();
+      let socket;
 
       function joinChat() {
-        const username = document.getElementById("username").value;
-        if (username) {
-          document.querySelector(".container").style.display = "none";
-          document.getElementById("chat-container").style.display = "block";
-          socket.emit("setUsername", username); // Enviar nome ao servidor
+        const username = document.getElementById("username").value.trim();
+        if (!username) return alert("Digite um nome!");
+
+        socket = io();
+        socket.emit("join", username);
+        document.getElementById("login").style.display = "none";
+        document.getElementById("chat-container").style.display = "block";
+
+        socket.on("msg", (data) => {
+          const div = document.createElement("div");
+          div.className = "message";
+          div.innerHTML = `<strong>${data.username}:</strong> `;
+
+          if (data.isFile) {
+            if (/\.(jpe?g|png|gif)$/i.test(data.message)) {
+              div.innerHTML += `<br><img src="${data.message}" alt="imagem" />`;
+            } else if (/\.(mp4|webm)$/i.test(data.message)) {
+              div.innerHTML += `<br><video controls src="${data.message}"></video>`;
+            } else {
+              const filename = data.message.split("/").pop();
+              div.innerHTML += `<br><a href="${data.message}" download>${filename}</a>`;
+            }
+          } else {
+            div.innerHTML += data.message;
+          }
+
+          document.getElementById("messages").appendChild(div);
+          document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+        });
+      }
+
+      async function sendMessage() {
+        const input = document.getElementById("message-input");
+        const file = document.getElementById("file-input").files[0];
+
+        if (file) {
+          const formData = new FormData();
+          formData.append("file", file);
+          const res = await fetch("/upload", {
+            method: "POST",
+            body: formData,
+          });
+          const data = await res.json();
+          socket.emit("msg", { message: data.fileUrl, isFile: true });
         } else {
-          alert("Por favor, escolha um nome.");
+          const message = input.value.trim();
+          if (message) {
+            socket.emit("msg", { message, isFile: false });
+            input.value = "";
+          }
         }
       }
-
-      function sendMessage() {
-        const messageInput = document.getElementById("message-input");
-        const message = messageInput.value;
-        if (message.trim() !== "") {
-          socket.emit("msg", { message: message }); // Enviar a mensagem ao servidor
-          messageInput.value = ""; // Limpar o campo de entrada
-        }
-      }
-
-      socket.on("msg", (data) => {
-        const messageContainer = document.getElementById("messages");
-        const messageElement = document.createElement("div");
-        messageElement.classList.add("message");
-        messageElement.innerHTML = `${data.username}: ${data.message}`; // Exibir a mensagem corretamente
-        messageContainer.appendChild(messageElement);
-        messageContainer.scrollTop = messageContainer.scrollHeight; // Rolagem automática
-      });
     </script>
   </body>
 </html>
