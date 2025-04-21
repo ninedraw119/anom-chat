@@ -11,15 +11,28 @@ const io = socketIo(server, {
 
 app.use(express.static('public'));
 
-io.on('connection', (socket) => {
-  console.log('Nova conexão anônima.');
+let users = {}; // Para armazenar os nomes dos usuários
 
-  socket.on('msg', (data) => {
-    io.emit('msg', data); // reenvia a msg criptografada
+// Quando um cliente se conecta
+io.on('connection', (socket) => {
+  console.log('Novo usuário conectado.');
+
+  // Quando o nome do usuário é definido
+  socket.on('setUsername', (username) => {
+    users[socket.id] = username; // Associa o nome ao socket
+    console.log(`${username} entrou no chat.`);
   });
 
+  // Quando o usuário envia uma mensagem
+  socket.on('msg', (data) => {
+    const username = users[socket.id] || 'Usuário Anônimo'; // Pega o nome associado ao socket
+    io.emit('msg', { username, message: data.message });
+  });
+
+  // Quando o usuário se desconecta
   socket.on('disconnect', () => {
-    console.log('Desconectado.');
+    console.log('Usuário desconectado.');
+    delete users[socket.id]; // Remove o usuário quando desconectar
   });
 });
 

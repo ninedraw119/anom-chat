@@ -1,49 +1,113 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Chat Anônimo</title>
-  <script src="/crypto-js.min.js"></script>
-  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-  <style>
-    body { background: #111; color: #eee; font-family: sans-serif; padding: 20px; }
-    #messages { background: #222; padding: 10px; height: 300px; overflow-y: auto; border: 1px solid #444; }
-    input { width: 100%; padding: 10px; background: #333; border: none; color: white; margin-top: 10px; }
-  </style>
-</head>
-<body>
-  <h2>Chat Anônimo 🔐</h2>
-  <div id="messages"></div>
-  <input id="msgInput" placeholder="Escreva algo secreto..." autocomplete="off">
-
-  <script>
-    const socket = io();
-    const secret = "segredo123"; // chave compartilhada com seus amigos (altere se quiser)
-
-    const messages = document.getElementById('messages');
-    const input = document.getElementById('msgInput');
-
-    input.addEventListener('keypress', e => {
-      if (e.key === 'Enter' && input.value.trim()) {
-        const encrypted = CryptoJS.AES.encrypt(input.value, secret).toString();
-        socket.emit('msg', encrypted);
-        input.value = '';
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Anônimo</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      body {
+        background-color: #121212; /* Fundo escuro */
+        color: #fff; /* Texto claro */
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
       }
-    });
 
-    socket.on('msg', encrypted => {
-      try {
-        const decrypted = CryptoJS.AES.decrypt(encrypted, secret).toString(CryptoJS.enc.Utf8);
-        if (decrypted) {
-          const div = document.createElement('div');
-          div.textContent = decrypted;
-          messages.appendChild(div);
-          messages.scrollTop = messages.scrollHeight;
+      .container {
+        text-align: center;
+      }
+
+      input[type="text"] {
+        background-color: #333; /* Cor de fundo do campo */
+        color: #fff; /* Texto claro no campo */
+        border: 2px solid #555; /* Borda do campo */
+        padding: 10px;
+        width: 800px;
+        border-radius: 5px;
+      }
+
+      button {
+        background-color: #6200ea; /* Cor de fundo do botão */
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #3700b3;
+      }
+
+      #chat-container {
+        display: none;
+        background-color: #1f1f1f;
+        border-radius: 10px;
+        padding: 20px;
+        max-width: 4000px;
+        margin-top: 20px;
+        height: 500px;
+        overflow-y: scroll;
+      }
+
+      .message {
+        background-color: #333;
+        border-radius: 8px;
+        margin: 10px 0;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Bem-vindo ao Chat Anônimo</h1>
+      <input type="text" id="username" placeholder="Escolha um nome" />
+      <button onclick="joinChat()">Entrar no Chat</button>
+    </div>
+
+    <div id="chat-container">
+      <div id="messages"></div>
+      <input type="text" id="message-input" placeholder="Digite uma mensagem" />
+      <button onclick="sendMessage()">Enviar</button>
+    </div>
+
+    <script>
+      const socket = io();
+
+      function joinChat() {
+        const username = document.getElementById("username").value;
+        if (username) {
+          document.querySelector(".container").style.display = "none";
+          document.getElementById("chat-container").style.display = "block";
+          socket.emit("join", username); // Enviar nome ao servidor
+        } else {
+          alert("Por favor, escolha um nome.");
         }
-      } catch (e) {
-        // ignora mensagens de outras chaves
       }
-    });
-  </script>
-</body>
+
+      function sendMessage() {
+        const messageInput = document.getElementById("message-input");
+        const message = messageInput.value;
+        if (message.trim() !== "") {
+          socket.emit("msg", message); // Enviar a mensagem ao servidor
+          messageInput.value = ""; // Limpar o campo de entrada
+        }
+      }
+
+      socket.on("msg", (data) => {
+        const messageContainer = document.getElementById("messages");
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message");
+        messageElement.innerHTML = data; // Exibe a mensagem recebida
+        messageContainer.appendChild(messageElement);
+        messageContainer.scrollTop = messageContainer.scrollHeight; // Rolagem automática
+      });
+    </script>
+  </body>
 </html>
