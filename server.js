@@ -1,6 +1,6 @@
 const express = require("express");
 const path = require("path");
-const multer = require("multer"); // Importando o multer
+const multer = require("multer");
 const app = express();
 const http = require("http").Server(app);
 const io = require("socket.io")(http);
@@ -33,25 +33,26 @@ app.post("/upload", upload.single("file"), (req, res) => {
 io.on("connection", (socket) => {
   console.log("Novo usuário conectado");
 
-  // Recebe mensagem e envia ao cliente
-  socket.on("msg", (message) => {
+  socket.on("sendMessage", (data) => {
     let previewImage = "txt.png"; // Previsão para arquivos de texto
     let fileType = "text"; // Tipo padrão do arquivo é texto
 
-    // Definindo a imagem de pré-visualização e o tipo do arquivo
-    if (message.endsWith(".mp3")) {
+    if (data.message.endsWith(".mp3")) {
       previewImage = "mp3.png";
       fileType = "audio";
-    } else if (message.endsWith(".pdf")) {
+    } else if (data.message.endsWith(".pdf")) {
       previewImage = "pdf.png";
       fileType = "pdf";
+    } else if (data.message.endsWith(".jpg") || data.message.endsWith(".png")) {
+      previewImage = data.message;
+      fileType = "image";
     }
 
-    // Emitindo mensagem com a pré-visualização
     io.emit("msg", {
-      message,
+      username: data.username,
+      message: data.message,
       previewImage: `/previews/${previewImage}`,
-      fileUrl: `/uploads/${message}`,
+      fileUrl: `/uploads/${data.message}`,
       fileType,
     });
   });
