@@ -2,62 +2,45 @@ const express = require("express");
 const path = require("path");
 const multer = require("multer");
 const app = express();
-const http = require("http").Server(app);
+const http = require("http").createServer(app);
 const io = require("socket.io")(http);
 
-// Configuração do multer para salvar os arquivos na pasta 'uploads'
-const upload = multer({ dest: "uploads/" });
+// Configuração do Multer para upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, "uploads/"),
+  filename: (req, file, cb) => cb(null, Date.now() + "_" + file.originalname),
+});
+const upload = multer({ storage });
 
-// Servir arquivos estáticos (imagens e outros arquivos)
+// Static files
 app.use(express.static(path.join(__dirname, "public")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Rota principal
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "public/index.html"));
 });
 
-// Manipulação do upload de arquivos
+// Upload de arquivos
 app.post("/upload", upload.single("file"), (req, res) => {
   const file = req.file;
-
-  // Envia a URL do arquivo para o cliente
   if (file) {
-    const fileUrl = `/uploads/${file.filename}`;
-    io.emit("fileUploaded", { fileUrl, filename: file.originalname, type: file.mimetype });
-    res.status(200).send("File uploaded successfully");
+    io.emit("file", {
+      filename: file.originalname,
+      url: `/uploads/${file.filename}`,
+    });
+    res.sendStatus(200);
   } else {
-    res.status(400).send("No file uploaded");
+    res.sendStatus(400);
   }
 });
 
+// Mensagens de texto
 io.on("connection", (socket) => {
-  console.log("Novo usuário conectado");
-
-  socket.on("sendMessage", (data) => {
-    let previewImage = "txt.png"; // Previsão para arquivos de texto
-    let fileType = "text"; // Tipo padrão do arquivo é texto
-
-    if (data.message.endsWith(".mp3")) {
-      previewImage = "mp3.png";
-      fileType = "audio";
-    } else if (data.message.endsWith(".pdf")) {
-      previewImage = "pdf.png";
-      fileType = "pdf";
-    } else if (data.message.endsWith(".jpg") || data.message.endsWith(".png")) {
-      previewImage = data.message;
-      fileType = "image";
-    }
-
-    io.emit("msg", {
-      username: data.username,
-      message: data.message,
-      previewImage: `/previews/${previewImage}`,
-      fileUrl: `/uploads/${data.message}`,
-      fileType,
-    });
+  socket.on("message", (data) => {
+    io.emit("message", data);
   });
 });
 
 http.listen(3000, () => {
-  console.log("Servidor rodando na porta 3000");
+  console.log("Servidor rodando em http://localhost:3000");
 });
