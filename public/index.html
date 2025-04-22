@@ -4,8 +4,65 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Anônimo</title>
-    <link rel="stylesheet" href="/style.css"> <!-- Referência ao style.css -->
     <script src="/socket.io/socket.io.js"></script>
+    <style>
+      body {
+        background-color: #121212;
+        color: #fff;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .container {
+        text-align: center;
+      }
+
+      input[type="text"] {
+        background-color: #333;
+        color: #fff;
+        border: 2px solid #555;
+        padding: 10px;
+        width: 800px;
+        border-radius: 5px;
+      }
+
+      button {
+        background-color: #6200ea;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #3700b3;
+      }
+
+      #chat-container {
+        display: none;
+        background-color: #1f1f1f;
+        border-radius: 10px;
+        padding: 20px;
+        max-width: 4000px;
+        margin-top: 20px;
+        height: 500px;
+        overflow-y: scroll;
+      }
+
+      .message {
+        background-color: #333;
+        border-radius: 8px;
+        margin: 10px 0;
+        padding: 10px;
+      }
+    </style>
   </head>
   <body>
     <div class="container">
@@ -18,8 +75,71 @@
       <div id="messages"></div>
       <input type="text" id="message-input" placeholder="Digite uma mensagem" />
       <button onclick="sendMessage()">Enviar</button>
+      <br /><br />
+      <input type="file" id="file-input" />
+      <button onclick="sendFile()">
+        <img src="downloadbutton.png" alt="Enviar Arquivo" style="height: 20px;" />
+      </button>
     </div>
 
-    <script src="/script.js"></script> <!-- Referência ao script.js -->
+    <script>
+      const socket = io();
+
+      function joinChat() {
+        const username = document.getElementById("username").value;
+        if (username) {
+          document.querySelector(".container").style.display = "none";
+          document.getElementById("chat-container").style.display = "block";
+          socket.emit("join", username);
+        } else {
+          alert("Por favor, escolha um nome.");
+        }
+      }
+
+      function sendMessage() {
+        const messageInput = document.getElementById("message-input");
+        const message = messageInput.value;
+        if (message.trim() !== "") {
+          socket.emit("msg", message);
+          messageInput.value = "";
+        }
+      }
+
+      function sendFile() {
+        const fileInput = document.getElementById("file-input");
+        const file = fileInput.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            socket.emit("file", {
+              filename: file.name,
+              data: reader.result,
+              type: file.type
+            });
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      }
+
+      socket.on("msg", (data) => {
+        const messageContainer = document.getElementById("messages");
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message");
+        messageElement.innerHTML = data;
+        messageContainer.appendChild(messageElement);
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+      });
+
+      socket.on("file", (fileData) => {
+        const messageContainer = document.getElementById("messages");
+        const link = document.createElement("a");
+        link.href = fileData.url;
+        link.download = fileData.filename;
+        link.innerText = `📎 Baixar ${fileData.filename}`;
+        link.classList.add("message");
+        messageContainer.appendChild(link);
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+      });
+    </script>
   </body>
 </html>
