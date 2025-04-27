@@ -47,6 +47,17 @@
       background-color: #3700b3;
     }
 
+    #send-message-button {
+      padding: 7px 15px;
+      font-size: 14px;
+    }
+
+    #send-file-button {
+      padding: 7px 15px;
+      font-size: 14px;
+      margin-top: -4px;
+    }
+
     #chat-container {
       display: none;
       background-color: #1f1f1f;
@@ -73,26 +84,34 @@
       flex-wrap: wrap;
       justify-content: center;
     }
+
+    .message-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Bem-vindo ao Chat Anônimo</h1>
     <input type="text" id="username" placeholder="Escolha um nome" />
-    <button onclick="joinChat()">Entrar no Chat</button>
+    <div class="button-container">
+      <button onclick="joinChat()">Entrar no Chat</button>
+    </div>
   </div>
 
   <div id="chat-container">
-    <div id="messages"></div>
+    <div id="messages" class="message-container"></div>
 
     <div class="input-area">
       <input type="text" id="message-input" placeholder="Digite uma mensagem" />
-      <button onclick="sendMessage()">Enviar Mensagem</button>
+      <button id="send-message-button" onclick="sendMessage()">Enviar Mensagem</button>
     </div>
 
     <div class="input-area">
       <input type="file" id="file-input" />
-      <button onclick="sendFile()">Enviar Arquivo</button>
+      <button id="send-file-button" onclick="sendFile()">Enviar Arquivo</button>
     </div>
   </div>
 
