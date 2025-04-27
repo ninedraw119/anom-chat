@@ -67,7 +67,7 @@
       width: 90%;
       margin-top: 20px;
       height: 500px;
-      overflow-y: scroll;
+      overflow-y: auto;
     }
 
     .message {
@@ -75,6 +75,7 @@
       border-radius: 8px;
       margin: 10px 0;
       padding: 10px;
+      word-wrap: break-word;
     }
 
     .input-area {
@@ -87,7 +88,8 @@
 
     .message-container {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: flex-start;
       margin-top: 20px;
     }
   </style>
