@@ -1,43 +1,33 @@
 const express = require("express");
-const app = express();
-const http = require("http").createServer(app);
-const io = require("socket.io")(http);
-const path = require("path");
+const socketIO = require("socket.io");
 const fs = require("fs");
-const { v4: uuidv4 } = require("uuid");
+const path = require("path");
 
-// ⚡ Importa o serverempé.js para manter o servidor em pé
-const startKeepAlive = require('./serverempé');
-startKeepAlive();
+const app = express();
+const server = app.listen(3000, () => {
+  console.log("Servidor rodando na porta 3000");
+});
 
-const PORT = process.env.PORT || 3000;
+const io = socketIO(server);
 
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static("public"));
 
 io.on("connection", (socket) => {
-  let username = "Anônimo";
+  console.log("Novo usuário conectado!");
 
-  socket.on("join", (name) => {
-    username = name || "Anônimo";
+  socket.on("join", (username) => {
     console.log(`${username} entrou no chat`);
+    socket.username = username;
   });
 
-  socket.on("msg", (msg) => {
-    const message = `<strong>${username}:</strong> ${msg}`;
-    io.emit("msg", message);
+  socket.on("msg", (message) => {
+    io.emit("msg", `${socket.username}: ${message}`);
   });
 
   socket.on("file", (fileData) => {
-    const ext = path.extname(fileData.filename);
-    const fileId = uuidv4();
-    const filename = `${fileId}${ext}`;
+    const filename = fileData.filename;
+    const fileType = fileData.type; // Tipo de arquivo (imagem, vídeo, etc.)
     const savePath = path.join(__dirname, "public", "uploads", filename);
-
-    // Garante que a pasta "uploads" exista
-    const uploadsDir = path.join(__dirname, "public", "uploads");
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
 
     fs.writeFile(savePath, Buffer.from(fileData.data), (err) => {
       if (err) {
@@ -48,12 +38,9 @@ io.on("connection", (socket) => {
       const fileUrl = `/uploads/${filename}`;
       io.emit("file", {
         filename: fileData.filename,
-        url: fileUrl
+        url: fileUrl,
+        type: fileType // Envia o tipo (imagem, vídeo, etc.)
       });
     });
   });
-});
-
-http.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
