@@ -6,6 +6,10 @@ const path = require("path");
 const fs = require("fs");
 const { v4: uuidv4 } = require("uuid");
 
+// ⚡ Importa o serverempé.js para manter o servidor em pé
+const startKeepAlive = require('./serverempé');
+startKeepAlive();
+
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, "public")));
