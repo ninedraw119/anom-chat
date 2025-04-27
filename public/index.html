@@ -146,27 +146,12 @@
 
     socket.on("file", (fileData) => {
       const messageContainer = document.getElementById("messages");
-      const wrapper = document.createElement("div");
-      wrapper.classList.add("message");
-
-      let previewHTML;
-      if (fileData.type.startsWith("image/")) {
-        previewHTML = `<img src="${fileData.url}" alt="${fileData.filename}"
-                        style="max-width:100%; border-radius:8px;" />`;
-      } else if (fileData.type.startsWith("video/")) {
-        previewHTML = `
-          <video controls style="max-width:100%; border-radius:8px;">
-            <source src="${fileData.url}" type="${fileData.type}">
-            Seu navegador não suporta este vídeo.
-          </video>`;
-      } else {
-        previewHTML = `<a href="${fileData.url}" download="${fileData.filename}">
-                         📎 Baixar ${fileData.filename}
-                       </a>`;
-      }
-
-      wrapper.innerHTML = `<strong>📁 ${fileData.filename}</strong><br>${previewHTML}`;
-      messageContainer.appendChild(wrapper);
+      const link = document.createElement("a");
+      link.href = fileData.url;
+      link.download = fileData.filename;  
+      link.innerText = `📎 Baixar ${fileData.filename}`;
+      link.classList.add("message");
+      messageContainer.appendChild(link);
       messageContainer.scrollTop = messageContainer.scrollHeight;
     });
   </script>
